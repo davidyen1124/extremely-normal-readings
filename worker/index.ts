@@ -18,10 +18,6 @@ export default {
     const url = new URL(request.url)
 
     if (url.pathname === '/api/react') {
-      if (request.method === 'OPTIONS') {
-        return withCors(new Response(null, { status: 204 }))
-      }
-
       if (request.method !== 'POST') {
         return json({ error: 'Method not allowed' }, 405)
       }
@@ -199,25 +195,10 @@ function parseJson(text: unknown): unknown {
 }
 
 function json(data: unknown, status = 200): Response {
-  return withCors(
-    new Response(JSON.stringify(data), {
-      status,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    }),
-  )
-}
-
-function withCors(response: Response): Response {
-  const headers = new Headers(response.headers)
-  headers.set('Access-Control-Allow-Origin', '*')
-  headers.set('Access-Control-Allow-Headers', 'Content-Type')
-  headers.set('Access-Control-Allow-Methods', 'POST, OPTIONS')
-
-  return new Response(response.body, {
-    status: response.status,
-    statusText: response.statusText,
-    headers,
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: {
+      'Content-Type': 'application/json',
+    },
   })
 }
