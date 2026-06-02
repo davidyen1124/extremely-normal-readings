@@ -1,0 +1,9 @@
+name = "extremely-normal-readings"
+main = "worker/index.ts"
+compatibility_date = "2026-06-01"
+keep_vars = true
+
+[assets]
+directory = "./dist"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
