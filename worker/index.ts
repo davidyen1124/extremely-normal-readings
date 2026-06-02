@@ -47,7 +47,6 @@ async function reactToEnvironment(request: Request, env: Env): Promise<Response>
         content: JSON.stringify(
           {
             browserEnvironment: payload.environment ?? {},
-            requestEnvironment: summarizeRequest(request),
             responseShape: {
               intensity: 'number 0..1, overall detector activity',
               needle: 'number 0..100, analog needle sweep',
@@ -57,7 +56,7 @@ async function reactToEnvironment(request: Request, env: Env): Promise<Response>
               glow: 'number 0..1, readout and lamp brightness',
               clickRate: 'number 0..1, optional Geiger click density after user taps',
             },
-            rule: 'Base the reaction on the environment signals, time, viewport, connection, request location if present, and uncertainty. Return only JSON.',
+            rule: 'Base the reaction only on the provided coarse browser signals: local time bucket, viewport bucket, touch support, online hint, and connection type. Return only JSON.',
           },
           null,
           2,
@@ -93,19 +92,6 @@ async function reactToEnvironment(request: Request, env: Env): Promise<Response>
     return json({ reaction, source: 'ai' })
   } catch {
     return json({ reaction: fallbackReaction(), source: 'fallback' })
-  }
-}
-
-function summarizeRequest(request: Request): Record<string, unknown> {
-  const cf = request.cf as IncomingRequestCfProperties | undefined
-
-  return {
-    colo: cf?.colo,
-    city: cf?.city,
-    region: cf?.region,
-    country: cf?.country,
-    timezone: cf?.timezone,
-    userAgent: request.headers.get('User-Agent')?.slice(0, 160) ?? '',
   }
 }
 

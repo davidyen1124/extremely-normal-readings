@@ -12,25 +12,12 @@ type DetectorReaction = {
 }
 
 type BrowserEnvironment = {
-  timestamp: string
-  timezone: string
-  hour: number
-  viewport: {
-    width: number
-    height: number
-    ratio: number
-  }
-  screen: {
-    width: number
-    height: number
-  }
+  localHour: number
+  timeBucket: 'day' | 'night'
+  viewport: 'compact' | 'roomy'
   touch: boolean
   online: boolean
   connection: string
-  battery?: {
-    level: number
-    charging: boolean
-  }
 }
 
 const DEFAULT_REACTION: DetectorReaction = {
@@ -169,43 +156,18 @@ export function App() {
 async function collectEnvironment(): Promise<BrowserEnvironment> {
   const now = new Date()
   const nav = navigator as Navigator & {
-    connection?: { effectiveType?: string; downlink?: number; rtt?: number }
-    getBattery?: () => Promise<{ level: number; charging: boolean }>
+    connection?: { effectiveType?: string }
   }
+  const localHour = now.getHours()
 
-  const environment: BrowserEnvironment = {
-    timestamp: now.toISOString(),
-    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-    hour: now.getHours(),
-    viewport: {
-      width: window.innerWidth,
-      height: window.innerHeight,
-      ratio: Number(window.devicePixelRatio.toFixed(2)),
-    },
-    screen: {
-      width: window.screen.width,
-      height: window.screen.height,
-    },
+  return {
+    localHour,
+    timeBucket: localHour < 6 || localHour > 20 ? 'night' : 'day',
+    viewport: window.innerWidth < 520 ? 'compact' : 'roomy',
     touch: navigator.maxTouchPoints > 0,
     online: navigator.onLine,
-    connection: nav.connection
-      ? `${nav.connection.effectiveType ?? 'unknown'}:${nav.connection.downlink ?? 'na'}:${nav.connection.rtt ?? 'na'}`
-      : 'unknown',
+    connection: nav.connection?.effectiveType ?? 'unknown',
   }
-
-  if (nav.getBattery) {
-    try {
-      const battery = await nav.getBattery()
-      environment.battery = {
-        level: Number(battery.level.toFixed(2)),
-        charging: battery.charging,
-      }
-    } catch {
-      return environment
-    }
-  }
-
-  return environment
 }
 
 function normalizeReaction(value: DetectorReaction): DetectorReaction {
@@ -221,11 +183,10 @@ function normalizeReaction(value: DetectorReaction): DetectorReaction {
 }
 
 function localReaction(environment: BrowserEnvironment): DetectorReaction {
-  const night = environment.hour < 6 || environment.hour > 20 ? 0.22 : 0
+  const night = environment.timeBucket === 'night' ? 0.22 : 0
   const network = environment.online ? 0.08 : 0.28
-  const compact = environment.viewport.width < 520 ? 0.12 : 0
-  const battery = environment.battery && environment.battery.level < 0.3 ? 0.18 : 0
-  const intensity = clamp(0.28 + night + network + compact + battery, 0, 1)
+  const compact = environment.viewport === 'compact' ? 0.12 : 0
+  const intensity = clamp(0.28 + night + network + compact, 0, 1)
 
   return normalizeReaction({
     intensity,
