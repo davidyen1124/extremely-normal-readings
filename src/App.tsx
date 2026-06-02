@@ -93,7 +93,7 @@ export function App() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ environment }),
         })
-        const data = (await response.json()) as { reaction?: DetectorReaction }
+        const data = (await response.json()) as { reaction?: unknown }
         if (!cancelled && data.reaction) {
           setReaction(normalizeReaction(data.reaction))
         }
@@ -170,15 +170,17 @@ async function collectEnvironment(): Promise<BrowserEnvironment> {
   }
 }
 
-function normalizeReaction(value: DetectorReaction): DetectorReaction {
+function normalizeReaction(value: unknown): DetectorReaction {
+  const record = value && typeof value === 'object' ? (value as Partial<DetectorReaction>) : {}
+
   return {
-    intensity: clamp(value.intensity, 0, 1),
-    needle: clamp(value.needle, 0, 100),
-    lamp: value.lamp === 'red' || value.lamp === 'amber' || value.lamp === 'green' ? value.lamp : 'green',
-    pulse: clamp(value.pulse, 0, 1),
-    jitter: clamp(value.jitter, 0, 1),
-    glow: clamp(value.glow, 0, 1),
-    clickRate: clamp(value.clickRate, 0, 1),
+    intensity: clamp(record.intensity, 0, 1),
+    needle: clamp(record.needle, 0, 100),
+    lamp: record.lamp === 'red' || record.lamp === 'amber' || record.lamp === 'green' ? record.lamp : 'green',
+    pulse: clamp(record.pulse, 0, 1),
+    jitter: clamp(record.jitter, 0, 1),
+    glow: clamp(record.glow, 0, 1),
+    clickRate: clamp(record.clickRate, 0, 1),
   }
 }
 
@@ -205,6 +207,6 @@ function lampColor(lamp: DetectorReaction['lamp']): string {
   return '139,224,75'
 }
 
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, Number.isFinite(value) ? value : min))
+function clamp(value: unknown, min: number, max: number): number {
+  return typeof value === 'number' && Number.isFinite(value) ? Math.min(max, Math.max(min, value)) : min
 }
