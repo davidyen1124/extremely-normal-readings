@@ -105,8 +105,6 @@ function summarizeRequest(request: Request): Record<string, unknown> {
     region: cf?.region,
     country: cf?.country,
     timezone: cf?.timezone,
-    latitude: cf?.latitude,
-    longitude: cf?.longitude,
     userAgent: request.headers.get('User-Agent')?.slice(0, 160) ?? '',
   }
 }
